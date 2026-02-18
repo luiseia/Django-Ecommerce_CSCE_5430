@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}My Orders — ShopProject{% endblock %}
+
+{% block content %}
+<h2>Order History</h2>
+
+{% if orders %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th>Total</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+        <tr>
+            <td><a href="{% url 'orders:order_detail' order.order_number %}">{{ order.order_number|truncatechars:13 }}</a></td>
+            <td>{{ order.created_at|date:"M d, Y" }}</td>
+            <td>{{ order.items.count }}</td>
+            <td>
+                <span class="badge bg-{% if order.status == 'DELIVERED' %}success{% elif order.status == 'CANCELLED' %}danger{% elif order.status == 'SHIPPED' %}primary{% else %}info{% endif %}">
+                    {{ order.get_status_display }}
+                </span>
+            </td>
+            <td>${{ order.total }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<p class="text-muted py-5 text-center">You haven't placed any orders yet. <a href="{% url 'products:product_list' %}">Start shopping!</a></p>
+{% endif %}
+{% endblock %}

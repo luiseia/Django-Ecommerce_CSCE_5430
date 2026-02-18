@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Merchant Dashboard — ShopProject{% endblock %}
+
+{% block content %}
+<h2>Merchant Dashboard</h2>
+<p class="text-muted">Welcome, {{ user.store_name|default:user.full_name }}!</p>
+
+<div class="card shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Your Products ({{ products.count }})</h5>
+    </div>
+    <div class="card-body p-0">
+        {% if products %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th>Price</th>
+                        <th>Stock</th>
+                        <th>Active</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for product in products %}
+                <tr>
+                    <td><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></td>
+                    <td>${{ product.price }}</td>
+                    <td>{{ product.stock_quantity }}</td>
+                    <td>
+                        <i class="bi bi-{% if product.is_active %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted p-3 mb-0">You haven't added any products yet. Use the admin panel to add products.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

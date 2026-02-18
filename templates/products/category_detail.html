@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}{{ category.name }} — ShopProject{% endblock %}
+
+{% block content %}
+<h2>{{ category.name }}</h2>
+{% if category.description %}<p class="text-muted">{{ category.description }}</p>{% endif %}
+
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-3 mb-4">
+        <div class="card shadow-sm h-100">
+            <div class="card-body d-flex flex-column">
+                <h6>{{ product.name }}</h6>
+                <span class="fw-bold mt-auto">${{ product.effective_price }}</span>
+                <a href="{{ product.get_absolute_url }}" class="btn btn-outline-primary btn-sm mt-2">View</a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="text-muted">No products in this category yet.</p>
+    {% endfor %}
+</div>
+{% endblock %}

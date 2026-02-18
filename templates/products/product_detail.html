@@ -1,0 +1,226 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} — ShopProject{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        {% if product.image %}
+        <img src="{{ product.image.url }}" class="img-fluid rounded shadow-sm" alt="{{ product.name }}">
+        {% else %}
+        <div class="bg-light d-flex align-items-center justify-content-center rounded" style="height:400px;">
+            <i class="bi bi-image text-muted" style="font-size:5rem;"></i>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="col-md-6">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'products:product_list' %}">Shop</a></li>
+                {% if product.category %}
+                <li class="breadcrumb-item"><a href="{{ product.category.get_absolute_url }}">{{ product.category.name }}</a></li>
+                {% endif %}
+                <li class="breadcrumb-item active">{{ product.name }}</li>
+            </ol>
+        </nav>
+
+        <h2>{{ product.name }}</h2>
+        <p class="text-muted small">Sold by {{ product.merchant.store_name|default:product.merchant.full_name }}</p>
+
+        {% if product.average_rating %}
+        <p class="mb-2">
+            {% for i in "12345" %}
+                {% if forloop.counter <= product.average_rating %}
+                <i class="bi bi-star-fill text-warning"></i>
+                {% else %}
+                <i class="bi bi-star text-warning"></i>
+                {% endif %}
+            {% endfor %}
+            <span class="text-muted small ms-1">{{ product.average_rating }}/5 ({{ product.review_count }} review{{ product.review_count|pluralize }})</span>
+        </p>
+        {% endif %}
+
+        <div class="mb-3">
+            {% if product.discount_price %}
+            <span class="text-decoration-line-through text-muted fs-5">${{ product.price }}</span>
+            <span class="fw-bold text-danger fs-3">${{ product.discount_price }}</span>
+            {% else %}
+            <span class="fw-bold fs-3">${{ product.price }}</span>
+            {% endif %}
+        </div>
+
+        <p>{{ product.description }}</p>
+
+        {% if product.in_stock %}
+        <p class="text-success"><i class="bi bi-check-circle"></i> In Stock ({{ product.stock_quantity }} available)</p>
+        {% if user.is_authenticated %}
+        <form method="get" action="{% url 'cart:add_to_cart' product.pk %}">
+            <button class="btn btn-primary btn-lg" type="submit">
+                <i class="bi bi-cart-plus"></i> Add to Cart
+            </button>
+        </form>
+        {% else %}
+        <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary btn-lg">Login to Purchase</a>
+        {% endif %}
+        {% else %}
+        <p class="text-danger"><i class="bi bi-x-circle"></i> Out of Stock</p>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ===== Reviews Section ===== -->
+<hr class="my-5">
+<div class="row">
+    <div class="col-md-8">
+        <h4 class="mb-4">
+            Customer Reviews
+            {% if product.review_count %}
+            <span class="text-muted fs-6">({{ product.review_count }})</span>
+            {% endif %}
+        </h4>
+
+        {% if reviews %}
+            {% for review in reviews %}
+            <div class="card mb-3 {% if user_review and review.pk == user_review.pk %}border-primary{% endif %}">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <strong>{{ review.user.full_name }}</strong>
+                            {% if user_review and review.pk == user_review.pk %}
+                            <span class="badge bg-primary ms-1">Your Review</span>
+                            {% endif %}
+                        </div>
+                        <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                    </div>
+                    <div class="mb-2">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= review.rating %}
+                            <i class="bi bi-star-fill text-warning"></i>
+                            {% else %}
+                            <i class="bi bi-star text-warning"></i>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                    <p class="mb-0">{{ review.comment }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <p class="text-muted">No reviews yet. Be the first to review this product!</p>
+        {% endif %}
+    </div>
+
+    <!-- Review submission form -->
+    <div class="col-md-4">
+        {% if review_form %}
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Write a Review</strong></div>
+            <div class="card-body">
+                <form method="post" action="{% url 'products:submit_review' product.slug %}">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <div class="d-flex gap-1" id="star-rating">
+                            {% for value, label in review_form.rating.field.choices %}
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input visually-hidden" type="radio"
+                                       name="rating" id="star{{ value }}" value="{{ value }}">
+                                <label class="form-check-label fs-4 star-label" for="star{{ value }}"
+                                       style="cursor:pointer;" title="{{ label }}">
+                                    <i class="bi bi-star"></i>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% if review_form.rating.errors %}
+                        <div class="text-danger small">{{ review_form.rating.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_comment" class="form-label">Your Review</label>
+                        {{ review_form.comment }}
+                        {% if review_form.comment.errors %}
+                        <div class="text-danger small">{{ review_form.comment.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Submit Review</button>
+                </form>
+            </div>
+        </div>
+        {% elif user.is_authenticated and user_review %}
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <i class="bi bi-check-circle text-success fs-3"></i>
+                <p class="mt-2 mb-0">You've already reviewed this product.</p>
+            </div>
+        </div>
+        {% else %}
+        <div class="card bg-light">
+            <div class="card-body text-center">
+                <p class="mb-2">Want to leave a review?</p>
+                <a href="{% url 'accounts:login' %}" class="btn btn-outline-primary btn-sm">Login</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if related %}
+<hr class="my-5">
+<h4>Related Products</h4>
+<div class="row">
+    {% for item in related %}
+    <div class="col-md-3 mb-3">
+        <div class="card shadow-sm h-100">
+            <div class="card-body">
+                <h6>{{ item.name }}</h6>
+                <span class="fw-bold">${{ item.effective_price }}</span><br>
+                <a href="{{ item.get_absolute_url }}" class="btn btn-outline-primary btn-sm mt-2">View</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Interactive star selection for the review form
+document.addEventListener("DOMContentLoaded", () => {
+    const labels = document.querySelectorAll(".star-label");
+    if (!labels.length) return;
+
+    function update(activeIndex) {
+        labels.forEach((lbl, idx) => {
+            const icon = lbl.querySelector("i");
+            icon.className = idx <= activeIndex ? "bi bi-star-fill text-warning" : "bi bi-star text-muted";
+        });
+    }
+
+    labels.forEach((lbl, idx) => {
+        lbl.addEventListener("mouseenter", () => update(idx));
+        lbl.addEventListener("click", () => {
+            lbl.dataset.selected = idx;
+            update(idx);
+        });
+    });
+
+    document.getElementById("star-rating").addEventListener("mouseleave", () => {
+        const checked = document.querySelector('input[name="rating"]:checked');
+        if (checked) {
+            const selectedIdx = parseInt(checked.value) - 1;
+            update(selectedIdx);
+        } else {
+            labels.forEach(lbl => {
+                lbl.querySelector("i").className = "bi bi-star text-muted";
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

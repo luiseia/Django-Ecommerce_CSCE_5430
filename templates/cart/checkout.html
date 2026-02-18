@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Checkout — ShopProject{% endblock %}
+
+{% block content %}
+<h2>Checkout</h2>
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Shipping Information</strong></div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Full Name</label>
+                        <input type="text" name="shipping_name" class="form-control"
+                               value="{{ user.full_name }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" name="shipping_phone" class="form-control"
+                               value="{{ user.phone_number }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Shipping Address</label>
+                        <textarea name="shipping_address" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm">
+            <div class="card-header"><strong>Order Summary</strong></div>
+            <ul class="list-group list-group-flush">
+                {% for item in cart.items.all %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>{{ item.product.name }} &times; {{ item.quantity }}</span>
+                    <span>${{ item.line_total }}</span>
+                </li>
+                {% endfor %}
+                <li class="list-group-item d-flex justify-content-between fw-bold">
+                    <span>Total</span>
+                    <span>${{ cart.total }}</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
