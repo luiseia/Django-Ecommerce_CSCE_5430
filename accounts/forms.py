@@ -1,6 +1,7 @@
 from django import forms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+from django.contrib.auth.password_validation import validate_password
 
 User = get_user_model()
 
@@ -57,6 +58,18 @@ class EmailLoginForm(AuthenticationForm):
         label="Email",
         widget=forms.EmailInput(attrs={"autofocus": True, "placeholder": "you@example.com"}),
     )
+    captcha = forms.CharField(
+        label="Captcha",
+        max_length=8,
+        help_text="Enter the characters shown in the image.",
+    )
+
+    def clean_captcha(self):
+        value = self.cleaned_data["captcha"].strip().upper()
+        session_code = (self.request.session.get("login_captcha_code") or "").upper()
+        if not session_code or value != session_code:
+            raise forms.ValidationError("Invalid captcha.")
+        return value
 
 
 # ---------------------------------------------------------------------------
@@ -81,3 +94,39 @@ class ProfileUpdateForm(forms.ModelForm):
                 format="%Y-%m-%d",
             ),
         }
+
+
+# ---------------------------------------------------------------------------
+# Password reset with email OTP
+# ---------------------------------------------------------------------------
+class PasswordResetRequestForm(forms.Form):
+    email = forms.EmailField(
+        widget=forms.EmailInput(attrs={"autofocus": True, "placeholder": "you@example.com"}),
+    )
+
+
+class PasswordResetOTPForm(forms.Form):
+    email = forms.EmailField()
+    code = forms.CharField(
+        max_length=6,
+        min_length=6,
+        help_text="Enter the 6-digit verification code sent to your email.",
+    )
+    new_password1 = forms.CharField(widget=forms.PasswordInput, label="New password")
+    new_password2 = forms.CharField(widget=forms.PasswordInput, label="Confirm new password")
+
+    def clean_code(self):
+        code = self.cleaned_data["code"]
+        if not code.isdigit():
+            raise forms.ValidationError("Verification code must be 6 digits.")
+        return code
+
+    def clean(self):
+        cleaned = super().clean()
+        password1 = cleaned.get("new_password1")
+        password2 = cleaned.get("new_password2")
+        if password1 and password2 and password1 != password2:
+            self.add_error("new_password2", "The two passwords do not match.")
+        if password1:
+            validate_password(password1)
+        return cleaned

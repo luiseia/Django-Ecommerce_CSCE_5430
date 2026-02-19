@@ -11,9 +11,30 @@
                 <h2 class="card-title text-center mb-4">Sign In</h2>
                 <form method="post">
                     {% csrf_token %}
-                    {{ form|crispy }}
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger py-2">
+                        {{ form.non_field_errors }}
+                    </div>
+                    {% endif %}
+                    {{ form.username|as_crispy_field }}
+                    {{ form.password|as_crispy_field }}
+                    <div class="mb-2">
+                        <img id="captcha-image"
+                             src="{% url 'accounts:login_captcha_image' %}?t={% now 'U' %}"
+                             alt="Login captcha"
+                             class="img-fluid border rounded p-1">
+                    </div>
+                    <button id="refresh-captcha" class="btn btn-outline-secondary btn-sm" type="button">
+                        Refresh Captcha
+                    </button>
+                    <div class="mt-3">
+                        {{ form.captcha|as_crispy_field }}
+                    </div>
                     <button class="btn btn-primary w-100 mt-3" type="submit">Login</button>
                 </form>
+                <p class="text-center mt-3 mb-0">
+                    <a href="{% url 'accounts:password_forgot' %}">Forgot password?</a>
+                </p>
                 <p class="text-center mt-3 mb-0">
                     Don't have an account? <a href="{% url 'accounts:register' %}">Register</a>
                 </p>
@@ -21,4 +42,13 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById("refresh-captcha").addEventListener("click", function () {
+    var img = document.getElementById("captcha-image");
+    img.src = "{% url 'accounts:login_captcha_image' %}?refresh=1&t=" + Date.now();
+});
+</script>
 {% endblock %}
