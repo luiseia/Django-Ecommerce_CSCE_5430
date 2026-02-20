@@ -45,6 +45,10 @@ python manage.py createsuperuser
 
 # 5. Run the development server
 python manage.py runserver
+
+
+python manage.py seed_products
+
 ```
 
 Visit `http://127.0.0.1:8000/` for the storefront and `http://127.0.0.1:8000/admin/` for the admin panel.
