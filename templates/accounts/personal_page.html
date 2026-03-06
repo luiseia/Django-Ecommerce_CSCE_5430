@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Personal Page — ShopProject{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <!-- User info card -->
+    <div class="col-md-4 mb-4">
+        <div class="card shadow-sm text-center">
+            <div class="card-body py-4">
+                {% if user.avatar %}
+                <img src="{{ user.avatar.url }}" class="rounded-circle mb-3"
+                     alt="Avatar" style="width:120px;height:120px;object-fit:cover;">
+                {% else %}
+                <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3"
+                     style="width:120px;height:120px;">
+                    <i class="bi bi-person-fill text-muted" style="font-size:3rem;"></i>
+                </div>
+                {% endif %}
+                <h4>{{ user.full_name }}</h4>
+                <p class="text-muted mb-1">{{ user.email }}</p>
+                <span class="badge bg-info">{{ user.get_role_display }}</span>
+            </div>
+            <ul class="list-group list-group-flush text-start">
+                <li class="list-group-item">
+                    <i class="bi bi-phone me-2"></i>
+                    <strong>Phone:</strong>
+                    {{ user.phone_number|default:"Not provided" }}
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    <strong>Date of Birth:</strong>
+                    {% if user.date_of_birth %}
+                        {{ user.date_of_birth|date:"M d, Y" }}
+                    {% else %}
+                        Not provided
+                    {% endif %}
+                </li>
+                <li class="list-group-item">
+                    <i class="bi bi-clock me-2"></i>
+                    <strong>Joined:</strong>
+                    {{ user.date_joined|date:"M d, Y" }}
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Edit form -->
+    <div class="col-md-6 mb-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Edit Information</h4>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <button class="btn btn-primary mt-2" type="submit">
+                        <i class="bi bi-check-lg me-1"></i>Save Changes
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

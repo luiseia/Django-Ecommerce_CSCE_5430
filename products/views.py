@@ -3,6 +3,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from bookmarks.models import Bookmark
+
 from .forms import ReviewForm
 from .models import Category, Product, Review
 
@@ -26,10 +28,15 @@ def product_list(request):
         products = products.filter(category__slug=category_slug)
 
     categories = Category.objects.all()
+    bookmarked_ids = set()
+    if request.user.is_authenticated:
+        bookmarked_ids = set(
+            Bookmark.objects.filter(user=request.user).values_list("product_id", flat=True)
+        )
     return render(
         request,
         "products/product_list.html",
-        {"products": products, "categories": categories, "query": query},
+        {"products": products, "categories": categories, "query": query, "bookmarked_ids": bookmarked_ids},
     )
 
 
@@ -48,10 +55,14 @@ def product_detail(request, slug):
     # Check if the current user has already reviewed this product
     user_review = None
     review_form = None
+    is_bookmarked = False
     if request.user.is_authenticated:
         user_review = product.reviews.filter(user=request.user).first()
         if not user_review:
             review_form = ReviewForm()
+        is_bookmarked = Bookmark.objects.filter(
+            user=request.user, product=product
+        ).exists()
 
     context = {
         "product": product,
@@ -59,6 +70,7 @@ def product_detail(request, slug):
         "related": related,
         "review_form": review_form,
         "user_review": user_review,
+        "is_bookmarked": is_bookmarked,
     }
     return render(request, "products/product_detail.html", context)
 

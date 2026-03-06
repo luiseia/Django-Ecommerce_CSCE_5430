@@ -61,6 +61,23 @@ def profile(request):
 
 
 # ---------------------------------------------------------------------------
+# Personal Page
+# ---------------------------------------------------------------------------
+@login_required
+def personal_page(request):
+    if request.method == "POST":
+        form = ProfileUpdateForm(request.POST, request.FILES, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your information has been updated.")
+            return redirect("accounts:personal_page")
+    else:
+        form = ProfileUpdateForm(instance=request.user)
+
+    return render(request, "accounts/personal_page.html", {"form": form})
+
+
+# ---------------------------------------------------------------------------
 # Role-specific dashboards
 # ---------------------------------------------------------------------------
 @login_required

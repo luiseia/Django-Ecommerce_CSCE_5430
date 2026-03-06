@@ -35,6 +35,11 @@
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
                 <li class="nav-item">
+                    <a class="nav-link" href="{% url 'bookmarks:bookmark_list' %}">
+                        <i class="bi bi-bookmark-heart"></i> Bookmarks
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="{% url 'cart:cart_detail' %}">
                         <i class="bi bi-cart3"></i>
                         Cart
@@ -50,6 +55,7 @@
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">Profile</a></li>
+                        <li><a class="dropdown-item" href="{% url 'accounts:personal_page' %}">Personal Page</a></li>
                         <li><a class="dropdown-item" href="{% url 'orders:order_history' %}">My Orders</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>

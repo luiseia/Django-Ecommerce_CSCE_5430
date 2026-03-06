@@ -25,7 +25,17 @@
             </ol>
         </nav>
 
-        <h2>{{ product.name }}</h2>
+        <div class="d-flex justify-content-between align-items-start">
+            <h2>{{ product.name }}</h2>
+            {% if user.is_authenticated %}
+            <a href="{% url 'bookmarks:toggle_bookmark' product.pk %}?next={{ request.path }}"
+               class="btn btn-outline-{% if is_bookmarked %}danger{% else %}secondary{% endif %} btn-sm"
+               title="{% if is_bookmarked %}Remove from Bookmarks{% else %}Add to Bookmarks{% endif %}">
+                <i class="bi bi-bookmark{% if is_bookmarked %}-fill{% endif %}"></i>
+                {% if is_bookmarked %}Bookmarked{% else %}Bookmark{% endif %}
+            </a>
+            {% endif %}
+        </div>
         <p class="text-muted small">Sold by {{ product.merchant.store_name|default:product.merchant.full_name }}</p>
 
         {% if product.average_rating %}

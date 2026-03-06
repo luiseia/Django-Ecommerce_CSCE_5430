@@ -13,6 +13,7 @@ urlpatterns = [
     path("products/", include("products.urls")),
     path("orders/", include("orders.urls")),
     path("cart/", include("cart.urls")),
+    path("bookmarks/", include("bookmarks.urls")),
     path("", RedirectView.as_view(pattern_name="products:home", permanent=False)),
 ]
 
