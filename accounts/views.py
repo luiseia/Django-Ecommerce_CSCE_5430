@@ -216,9 +216,13 @@ def personal_page(request):
 @login_required
 @merchant_required
 def merchant_dashboard(request):
-    products = request.user.products.all()
+    products = request.user.products.select_related("inventory").all()
+    low_stock_count = sum(
+        1 for p in products
+        if hasattr(p, "inventory") and p.inventory.is_low_stock
+    )
     return render(
         request,
         "accounts/merchant_dashboard.html",
-        {"products": products},
+        {"products": products, "low_stock_count": low_stock_count},
     )

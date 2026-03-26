@@ -3,10 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 
+from accounts.decorators import merchant_required
 from bookmarks.models import Bookmark
 
-from .forms import ReviewForm
-from .models import Category, Product, Review
+from .forms import InventoryUpdateForm, ReviewForm
+from .models import Category, Inventory, Product, Review
 from orders.models import OrderItem, Order
 
 def home(request):
@@ -181,3 +182,69 @@ def category_detail(request, slug):
     category = get_object_or_404(Category, slug=slug)
     products = category.products.filter(is_active=True).select_related("inventory")
     return render(request, "products/category_detail.html", {"category": category, "products": products})
+
+
+# ---------------------------------------------------------------------------
+# Inventory Management (Merchant only)
+# ---------------------------------------------------------------------------
+@login_required
+@merchant_required
+def inventory_list(request):
+    """Display all inventory records for the merchant's products."""
+    products = (
+        request.user.products
+        .select_related("inventory")
+        .order_by("name")
+    )
+    # Build inventory data with low-stock flag
+    inventory_data = []
+    for product in products:
+        try:
+            inv = product.inventory
+        except Inventory.DoesNotExist:
+            inv = Inventory.objects.create(product=product, quantity=0)
+        inventory_data.append({
+            "product": product,
+            "inventory": inv,
+        })
+
+    low_stock_count = sum(1 for d in inventory_data if d["inventory"].is_low_stock)
+
+    return render(request, "products/inventory_list.html", {
+        "inventory_data": inventory_data,
+        "low_stock_count": low_stock_count,
+    })
+
+
+@login_required
+@merchant_required
+def inventory_update(request, pk):
+    """Allow merchant to restock a product and update low-stock threshold."""
+    inventory = get_object_or_404(
+        Inventory.objects.select_related("product"),
+        pk=pk,
+        product__merchant=request.user,
+    )
+
+    if request.method == "POST":
+        form = InventoryUpdateForm(request.POST, instance=inventory)
+        if form.is_valid():
+            restock_amount = form.cleaned_data.get("restock_amount")
+            form.save()
+            if restock_amount:
+                inventory.increase(restock_amount)
+                messages.success(
+                    request,
+                    f"Restocked {inventory.product.name} by {restock_amount} units. "
+                    f"New stock: {inventory.quantity}.",
+                )
+            else:
+                messages.success(request, f"Updated settings for {inventory.product.name}.")
+            return redirect("products:inventory_list")
+    else:
+        form = InventoryUpdateForm(instance=inventory)
+
+    return render(request, "products/inventory_update.html", {
+        "form": form,
+        "inventory": inventory,
+    })

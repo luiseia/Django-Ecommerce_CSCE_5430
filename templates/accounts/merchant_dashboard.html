@@ -6,6 +6,22 @@
 <h2>Merchant Dashboard</h2>
 <p class="text-muted">Welcome, {{ user.store_name|default:user.full_name }}!</p>
 
+{% if low_stock_count %}
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div>
+        <strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }}</strong> {{ low_stock_count|pluralize:"is,are" }} running low on stock.
+        <a href="{% url 'products:inventory_list' %}" class="alert-link">Manage Inventory</a>
+    </div>
+</div>
+{% endif %}
+
+<div class="d-flex gap-2 mb-3">
+    <a href="{% url 'products:inventory_list' %}" class="btn btn-outline-primary">
+        <i class="bi bi-box-seam"></i> Manage Inventory
+    </a>
+</div>
+
 <div class="card shadow-sm">
     <div class="card-header d-flex justify-content-between align-items-center">
         <h5 class="mb-0">Your Products ({{ products.count }})</h5>
@@ -19,6 +35,7 @@
                         <th>Product</th>
                         <th>Price</th>
                         <th>Stock</th>
+                        <th>Status</th>
                         <th>Active</th>
                     </tr>
                 </thead>
@@ -27,7 +44,23 @@
                 <tr>
                     <td><a href="{{ product.get_absolute_url }}">{{ product.name }}</a></td>
                     <td>${{ product.price }}</td>
-                    <td>{{ product.stock_quantity }}</td>
+                    <td>
+                        {{ product.stock_quantity }}
+                        {% if product.stock_quantity == 0 %}
+                            <span class="badge bg-danger ms-1">Out</span>
+                        {% elif product.inventory.is_low_stock %}
+                            <span class="badge bg-warning text-dark ms-1">Low</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if product.stock_quantity == 0 %}
+                            <span class="text-danger">Out of Stock</span>
+                        {% elif product.inventory.is_low_stock %}
+                            <span class="text-warning">Low Stock</span>
+                        {% else %}
+                            <span class="text-success">In Stock</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <i class="bi bi-{% if product.is_active %}check-circle text-success{% else %}x-circle text-danger{% endif %}"></i>
                     </td>

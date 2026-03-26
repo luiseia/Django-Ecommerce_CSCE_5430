@@ -1,6 +1,24 @@
 from django import forms
 
-from .models import Review
+from .models import Inventory, Review
+
+
+class InventoryUpdateForm(forms.ModelForm):
+    """Form for merchants to update stock quantity."""
+
+    restock_amount = forms.IntegerField(
+        min_value=1,
+        required=False,
+        widget=forms.NumberInput(attrs={"class": "form-control", "placeholder": "Amount to add"}),
+        help_text="Enter a positive number to add to current stock.",
+    )
+
+    class Meta:
+        model = Inventory
+        fields = ["low_stock_threshold"]
+        widgets = {
+            "low_stock_threshold": forms.NumberInput(attrs={"class": "form-control"}),
+        }
 
 
 class ReviewForm(forms.ModelForm):

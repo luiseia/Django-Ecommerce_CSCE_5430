@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory Management — ShopProject{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Inventory Management</h2>
+    <a href="{% url 'accounts:merchant_dashboard' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left"></i> Back to Dashboard
+    </a>
+</div>
+
+{% if low_stock_count %}
+<div class="alert alert-warning d-flex align-items-center" role="alert">
+    <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+    <div>
+        <strong>{{ low_stock_count }} product{{ low_stock_count|pluralize }}</strong> {{ low_stock_count|pluralize:"is,are" }} at or below the low-stock threshold. Consider restocking soon.
+    </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        {% if inventory_data %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Product</th>
+                        <th class="text-center">Current Stock</th>
+                        <th class="text-center">Low-Stock Threshold</th>
+                        <th class="text-center">Status</th>
+                        <th class="text-center">Last Restocked</th>
+                        <th class="text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in inventory_data %}
+                <tr class="{% if item.inventory.quantity == 0 %}table-danger{% elif item.inventory.is_low_stock %}table-warning{% endif %}">
+                    <td>
+                        <a href="{{ item.product.get_absolute_url }}">{{ item.product.name }}</a>
+                    </td>
+                    <td class="text-center fw-bold">{{ item.inventory.quantity }}</td>
+                    <td class="text-center">{{ item.inventory.low_stock_threshold }}</td>
+                    <td class="text-center">
+                        {% if item.inventory.quantity == 0 %}
+                            <span class="badge bg-danger">Out of Stock</span>
+                        {% elif item.inventory.is_low_stock %}
+                            <span class="badge bg-warning text-dark">Low Stock</span>
+                        {% else %}
+                            <span class="badge bg-success">In Stock</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center text-muted small">
+                        {% if item.inventory.last_restocked %}
+                            {{ item.inventory.last_restocked|date:"M d, Y H:i" }}
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="{% url 'products:inventory_update' item.inventory.pk %}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-box-seam"></i> Restock
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="text-muted p-3 mb-0">No products found. Add products via the admin panel first.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

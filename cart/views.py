@@ -24,9 +24,21 @@ def add_to_cart(request, product_id):
     product = get_object_or_404(Product, pk=product_id, is_active=True)
     cart = _get_or_create_cart(request.user)
 
+    # Check stock availability
+    if not product.in_stock:
+        messages.error(request, f"Sorry, {product.name} is currently out of stock.")
+        return redirect("products:product_detail", slug=product.slug)
+
     item, created = CartItem.objects.get_or_create(cart=cart, product=product)
     if not created:
-        item.quantity += 1
+        new_qty = item.quantity + 1
+        if new_qty > product.stock_quantity:
+            messages.warning(
+                request,
+                f"Cannot add more — only {product.stock_quantity} unit(s) of {product.name} available.",
+            )
+            return redirect("cart:cart_detail")
+        item.quantity = new_qty
         item.save()
 
     messages.success(request, f"Added {product.name} to your cart.")
@@ -49,6 +61,23 @@ def checkout(request):
         return redirect("cart:cart_detail")
 
     if request.method == "POST":
+        # Validate stock for all items before creating the order
+        stock_errors = []
+        for cart_item in cart.items.select_related("product__inventory"):
+            available = cart_item.product.stock_quantity
+            if cart_item.quantity > available:
+                if available == 0:
+                    stock_errors.append(f"{cart_item.product.name} is out of stock.")
+                else:
+                    stock_errors.append(
+                        f"{cart_item.product.name}: only {available} available (you requested {cart_item.quantity})."
+                    )
+
+        if stock_errors:
+            for err in stock_errors:
+                messages.error(request, err)
+            return redirect("cart:cart_detail")
+
         order = Order.objects.create(
             user=request.user,
             shipping_name=request.POST.get("shipping_name", request.user.full_name),

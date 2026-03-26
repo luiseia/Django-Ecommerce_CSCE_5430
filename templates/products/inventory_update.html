@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}Restock {{ inventory.product.name }} — ShopProject{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <a href="{% url 'products:inventory_list' %}" class="btn btn-outline-secondary btn-sm mb-3">
+            <i class="bi bi-arrow-left"></i> Back to Inventory
+        </a>
+
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Restock: {{ inventory.product.name }}</h5>
+            </div>
+            <div class="card-body">
+                <!-- Current status summary -->
+                <div class="row mb-4">
+                    <div class="col-sm-4 text-center">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Current Stock</div>
+                            <div class="fs-3 fw-bold {% if inventory.quantity == 0 %}text-danger{% elif inventory.is_low_stock %}text-warning{% else %}text-success{% endif %}">
+                                {{ inventory.quantity }}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4 text-center">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Status</div>
+                            <div class="fs-5 mt-1">
+                                {% if inventory.quantity == 0 %}
+                                    <span class="badge bg-danger">Out of Stock</span>
+                                {% elif inventory.is_low_stock %}
+                                    <span class="badge bg-warning text-dark">Low Stock</span>
+                                {% else %}
+                                    <span class="badge bg-success">In Stock</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-sm-4 text-center">
+                        <div class="border rounded p-3">
+                            <div class="text-muted small">Last Restocked</div>
+                            <div class="mt-1">
+                                {% if inventory.last_restocked %}
+                                    {{ inventory.last_restocked|date:"M d, Y" }}
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="mb-3">
+                        <label for="id_restock_amount" class="form-label fw-bold">Restock Amount</label>
+                        {{ form.restock_amount }}
+                        <div class="form-text">{{ form.restock_amount.help_text }}</div>
+                        {% if form.restock_amount.errors %}
+                        <div class="text-danger small">{{ form.restock_amount.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="id_low_stock_threshold" class="form-label fw-bold">Low-Stock Threshold</label>
+                        {{ form.low_stock_threshold }}
+                        <div class="form-text">You'll see a warning when stock falls to or below this number.</div>
+                        {% if form.low_stock_threshold.errors %}
+                        <div class="text-danger small">{{ form.low_stock_threshold.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-box-seam"></i> Update Inventory
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

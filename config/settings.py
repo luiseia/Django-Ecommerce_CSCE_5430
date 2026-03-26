@@ -20,7 +20,7 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() in ("true", "1", "yes")
 _allowed_hosts_raw = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
 ALLOWED_HOSTS = [host.strip() for host in _allowed_hosts_raw.split(",") if host.strip()]
-for host in ("localhost", "127.0.0.1", "testserver"):
+for host in ("localhost", "127.0.0.1", "testserver", "10.146.11.46"):
     if host not in ALLOWED_HOSTS:
         ALLOWED_HOSTS.append(host)
 

@@ -10,4 +10,7 @@ urlpatterns = [
     path("product/<slug:slug>/", views.product_detail, name="product_detail"),
     path("product/<slug:slug>/review/", views.submit_review, name="submit_review"),
     path("category/<slug:slug>/", views.category_detail, name="category_detail"),
+    # Inventory management (merchant only)
+    path("inventory/", views.inventory_list, name="inventory_list"),
+    path("inventory/<int:pk>/update/", views.inventory_update, name="inventory_update"),
 ]
