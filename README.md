@@ -23,8 +23,11 @@ A full-featured e-commerce platform built with Django 5.2 LTS featuring a **cust
 
 ### Additional
 - Bootstrap 5 responsive templates with role-aware navigation
+- **Dark / Light theme toggle** — one-click switch between dark and light mode; preference saved in localStorage and auto-detects system setting
+- **Voice command search** — click the mic button in the navbar, speak a product name, and it auto-fills and submits the search (powered by Web Speech API; works in Chrome / Edge)
 - Django admin configured for all models (proxy model admin for each role)
 - Cart item count in every page via context processor
+
 
 ## Quick Start
 

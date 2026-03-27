@@ -17,3 +17,14 @@ main {
 .card:hover {
     transform: translateY(-2px);
 }
+
+/* Voice search button pulse animation while listening */
+#voiceSearchBtn.btn-danger {
+    animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+    70%  { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+}

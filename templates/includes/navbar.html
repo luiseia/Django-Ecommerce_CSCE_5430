@@ -1,5 +1,5 @@
 {% load account_tags %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg bg-body-tertiary">
     <div class="container">
         <a class="navbar-brand" href="{% url 'products:home' %}">
             <i class="bi bi-shop"></i> ShopProject
@@ -23,14 +23,26 @@
                 {% endif %}
             </ul>
 
-            <!-- Search -->
-            <form class="d-flex me-3" action="{% url 'products:product_list' %}" method="get">
-                <input class="form-control form-control-sm me-2" type="search"
-                       name="q" placeholder="Search products…">
-                <button class="btn btn-outline-light btn-sm" type="submit">
-                    <i class="bi bi-search"></i>
+            <!-- Search + Voice + Theme -->
+            <div class="d-flex align-items-center me-3 gap-1">
+                <form class="d-flex" action="{% url 'products:product_list' %}" method="get">
+                    <input class="form-control form-control-sm me-1" type="search"
+                           name="q" placeholder="Search products…" style="min-width:140px;">
+                    <button class="btn btn-outline-secondary btn-sm" type="submit">
+                        <i class="bi bi-search"></i>
+                    </button>
+                    <button type="button" id="voiceSearchBtn"
+                            class="btn btn-outline-secondary btn-sm ms-1"
+                            title="Voice search">
+                        <i class="bi bi-mic"></i>
+                    </button>
+                </form>
+                <button type="button" id="themeToggleBtn"
+                        class="btn btn-outline-secondary btn-sm ms-1"
+                        title="Switch to dark mode">
+                    <i class="bi bi-moon-fill"></i>
                 </button>
-            </form>
+            </div>
 
             <ul class="navbar-nav">
                 {% if user.is_authenticated %}
