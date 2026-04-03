@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "orders.apps.OrdersConfig",
     "cart.apps.CartConfig",
     "bookmarks.apps.BookmarksConfig",
+    "recommendations.apps.RecommendationsConfig",
 ]
 
 MIDDLEWARE = [
@@ -154,3 +155,10 @@ FACE_LOGIN_DISTANCE_THRESHOLD = float(os.environ.get("FACE_LOGIN_DISTANCE_THRESH
 # Misc
 # ---------------------------------------------------------------------------
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Recommendation system feature switch.
+ENABLE_AI_RECOMMENDATIONS = os.environ.get("ENABLE_AI_RECOMMENDATIONS", "True").lower() in (
+    "true",
+    "1",
+    "yes",
+)

@@ -51,4 +51,6 @@
 {% else %}
 <p class="text-muted py-5 text-center">Your cart is empty. <a href="{% url 'products:product_list' %}">Start shopping!</a></p>
 {% endif %}
+
+{% include "recommendations/_recommendation_grid.html" with recommendations=recommended_items section_title="You May Also Need" section_subtitle="Based on your cart and interests" %}
 {% endblock %}
