@@ -58,4 +58,6 @@
     {% endfor %}
 </div>
 {% endif %}
+
+{% include "recommendations/_recommendation_grid.html" with recommendations=recommended_items section_title="For You" section_subtitle="AI personalized picks" %}
 {% endblock %}

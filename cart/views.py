@@ -16,7 +16,22 @@ def _get_or_create_cart(user):
 @login_required
 def cart_detail(request):
     cart = _get_or_create_cart(request.user)
-    return render(request, "cart/cart_detail.html", {"cart": cart})
+    recommended_items = []
+    try:
+        from recommendations.service import get_cart_recommendations
+
+        recommended_items = get_cart_recommendations(request.user, limit=4)
+    except Exception:
+        recommended_items = []
+
+    return render(
+        request,
+        "cart/cart_detail.html",
+        {
+            "cart": cart,
+            "recommended_items": recommended_items,
+        },
+    )
 
 
 @login_required

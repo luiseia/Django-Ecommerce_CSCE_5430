@@ -10,10 +10,29 @@ from .forms import InventoryUpdateForm, ReviewForm
 from .models import Category, Inventory, Product, Review
 from orders.models import OrderItem, Order
 
+
 def home(request):
     featured = Product.objects.filter(is_active=True).select_related("inventory")[:8]
     categories = Category.objects.all()
-    return render(request, "products/home.html", {"featured": featured, "categories": categories})
+
+    # Recommendation failures must not block the page.
+    recommended_items = []
+    try:
+        from recommendations.service import get_home_recommendations
+
+        recommended_items = get_home_recommendations(request.user, limit=8)
+    except Exception:
+        recommended_items = []
+
+    return render(
+        request,
+        "products/home.html",
+        {
+            "featured": featured,
+            "categories": categories,
+            "recommended_items": recommended_items,
+        },
+    )
 
 
 def product_list(request):
@@ -87,6 +106,15 @@ def product_detail(request, slug):
         .exclude(pk=product.pk)[:4]
     )
 
+    recommended_items = []
+    try:
+        from recommendations.service import get_product_recommendations, track_product_view
+
+        track_product_view(request.user, product)
+        recommended_items = get_product_recommendations(product=product, user=request.user, limit=4)
+    except Exception:
+        recommended_items = []
+
     user_review = None
     review_form = None
     review_message = None
@@ -114,6 +142,7 @@ def product_detail(request, slug):
         "product": product,
         "reviews": reviews,
         "related": related,
+        "recommended_items": recommended_items,
         "review_form": review_form,
         "user_review": user_review,
         "review_message": review_message,
