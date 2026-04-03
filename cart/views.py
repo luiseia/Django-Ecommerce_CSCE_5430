@@ -99,7 +99,64 @@ def checkout(request):
             except (ValueError, cart_item.product.inventory.DoesNotExist.__class__):
                 pass
 
+        # First compute subtotal from created order items.
         order.calculate_totals()
+
+        # Handle discount code if provided
+        discount_code_str = request.POST.get("discount_code", "").strip().upper()
+        if discount_code_str:
+            try:
+                from discounts.models import DiscountCode, OrderDiscount
+
+                discount_code = DiscountCode.objects.get(code=discount_code_str, is_active=True)
+
+                # Verify discount code is valid
+                is_valid, _ = discount_code.is_valid()
+                if is_valid and order.subtotal >= discount_code.min_purchase_amount:
+                    # If discount is limited to selected products, all order items must be allowed.
+                    if discount_code.products.exists():
+                        allowed_product_ids = set(discount_code.products.values_list("id", flat=True))
+                        order_product_ids = set(order.items.values_list("product_id", flat=True))
+                        if not order_product_ids.issubset(allowed_product_ids):
+                            messages.warning(
+                                request,
+                                "Discount code was not applied because some items in your order are not eligible.",
+                            )
+                            order.calculate_totals()
+                        else:
+                            discount_amount, _ = discount_code.calculate_discount(order.subtotal)
+                            OrderDiscount.objects.update_or_create(
+                                order=order,
+                                defaults={
+                                    "discount_code": discount_code,
+                                    "discount_amount": discount_amount,
+                                },
+                            )
+                            order.discount_amount = discount_amount
+                            order.calculate_totals()
+
+                            # Increment usage counter once successful.
+                            discount_code.current_uses += 1
+                            discount_code.save(update_fields=["current_uses"])
+                    else:
+                        discount_amount, _ = discount_code.calculate_discount(order.subtotal)
+                        OrderDiscount.objects.update_or_create(
+                            order=order,
+                            defaults={
+                                "discount_code": discount_code,
+                                "discount_amount": discount_amount,
+                            },
+                        )
+                        order.discount_amount = discount_amount
+                        order.calculate_totals()
+
+                        # Increment usage counter once successful.
+                        discount_code.current_uses += 1
+                        discount_code.save(update_fields=["current_uses"])
+            except Exception:
+                # Keep checkout resilient even if discount handling fails unexpectedly.
+                order.calculate_totals()
+
         cart.items.all().delete()
 
         messages.success(request, f"Order {order.order_number} placed successfully!")

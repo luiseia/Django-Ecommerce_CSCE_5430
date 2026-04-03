@@ -27,6 +27,7 @@ class Order(models.Model):
     shipping_phone = models.CharField(max_length=17, blank=True)
 
     subtotal = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     shipping_cost = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
@@ -42,8 +43,8 @@ class Order(models.Model):
 
     def calculate_totals(self):
         self.subtotal = sum(item.line_total for item in self.items.all())
-        self.total = self.subtotal + self.shipping_cost
-        self.save(update_fields=["subtotal", "total"])
+        self.total = self.subtotal - self.discount_amount + self.shipping_cost
+        self.save(update_fields=["subtotal", "discount_amount", "total"])
 
 
 class OrderItem(models.Model):

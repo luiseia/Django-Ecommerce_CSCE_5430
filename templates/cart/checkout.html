@@ -9,7 +9,7 @@
         <div class="card shadow-sm">
             <div class="card-header"><strong>Shipping Information</strong></div>
             <div class="card-body">
-                <form method="post">
+                <form method="post" id="checkout-form">
                     {% csrf_token %}
                     <div class="mb-3">
                         <label class="form-label">Full Name</label>
@@ -32,6 +32,41 @@
     </div>
 
     <div class="col-md-5">
+        <!-- Discount Code Section -->
+        <div class="card shadow-sm mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Apply Discount Code</h5>
+            </div>
+            <div class="card-body">
+                <form id="discount-form" method="post">
+                    {% csrf_token %}
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            name="code" 
+                            class="form-control" 
+                            placeholder="Enter discount code"
+                            id="discount-code-input"
+                        >
+                        <button type="submit" class="btn btn-outline-secondary">Apply</button>
+                    </div>
+                    <small class="text-muted d-block mt-2" id="discount-message"></small>
+                </form>
+                
+                <!-- Display Applied Discount -->
+                <div id="applied-discount" class="mt-3" style="display: none;">
+                    <div class="alert alert-success d-flex justify-content-between align-items-center mb-0">
+                        <span>
+                            <strong>Discount Applied:</strong>
+                            <span id="discount-code-display"></span>
+                        </span>
+                        <button type="button" class="btn btn-sm btn-danger" id="remove-discount-btn">Remove</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary -->
         <div class="card shadow-sm">
             <div class="card-header"><strong>Order Summary</strong></div>
             <ul class="list-group list-group-flush">
@@ -41,12 +76,94 @@
                     <span>${{ item.line_total }}</span>
                 </li>
                 {% endfor %}
+                <li class="list-group-item d-flex justify-content-between">
+                    <span>Subtotal:</span>
+                    <span id="subtotal">${{ cart.total }}</span>
+                </li>
+                <li class="list-group-item d-flex justify-content-between text-success" id="discount-row" style="display: none;">
+                    <span>Discount:</span>
+                    <span id="discount-display">-$0.00</span>
+                </li>
                 <li class="list-group-item d-flex justify-content-between fw-bold">
-                    <span>Total</span>
-                    <span>${{ cart.total }}</span>
+                    <span>Total:</span>
+                    <span id="total">${{ cart.total }}</span>
                 </li>
             </ul>
         </div>
     </div>
 </div>
+
+<script>
+document.getElementById('discount-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = document.getElementById('discount-code-input').value;
+    const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace('$', ''));
+    const discountMessage = document.getElementById('discount-message');
+    
+    if (!code.trim()) {
+        discountMessage.textContent = '❌ Please enter a discount code';
+        discountMessage.style.color = '#dc3545';
+        return;
+    }
+    
+    try {
+        const response = await fetch(`/discounts/validate/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('#discount-form [name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `code=${encodeURIComponent(code)}&subtotal=${subtotal}`
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Save discount code to form (will be submitted with order)
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'discount_code';
+            hiddenInput.value = data.code;
+            
+            // Remove any existing discount code input
+            const checkoutForm = document.getElementById('checkout-form');
+            const existing = checkoutForm.querySelector('input[name="discount_code"]');
+            if (existing) existing.remove();
+            
+            checkoutForm.appendChild(hiddenInput);
+            
+            // Update UI
+            document.getElementById('discount-code-display').textContent = code;
+            document.getElementById('discount-display').textContent = `-$${data.discount_amount.toFixed(2)}`;
+            const newTotal = (subtotal - data.discount_amount).toFixed(2);
+            document.getElementById('total').textContent = `$${newTotal}`;
+            document.getElementById('applied-discount').style.display = 'block';
+            document.getElementById('discount-row').style.display = 'table-row';
+            document.getElementById('discount-code-input').value = '';
+            discountMessage.textContent = data.message;
+            discountMessage.style.color = '#198754';
+        } else {
+            discountMessage.textContent = `❌ ${data.error}`;
+            discountMessage.style.color = '#dc3545';
+        }
+    } catch (error) {
+        discountMessage.textContent = '❌ An error occurred. Please try again.';
+        discountMessage.style.color = '#dc3545';
+        console.error('Error:', error);
+    }
+});
+
+document.getElementById('remove-discount-btn').addEventListener('click', () => {
+    const checkoutForm = document.getElementById('checkout-form');
+    const existing = checkoutForm.querySelector('input[name="discount_code"]');
+    if (existing) existing.remove();
+    
+    const subtotal = parseFloat(document.getElementById('subtotal').textContent.replace('$', ''));
+    document.getElementById('applied-discount').style.display = 'none';
+    document.getElementById('discount-row').style.display = 'none';
+    document.getElementById('total').textContent = `$${subtotal}`;
+    document.getElementById('discount-message').textContent = 'Discount removed';
+    document.getElementById('discount-message').style.color = '#6c757d';
+});
+</script>
 {% endblock %}

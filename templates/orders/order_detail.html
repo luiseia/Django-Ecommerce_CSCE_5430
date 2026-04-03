@@ -30,6 +30,9 @@
                     <tfoot>
                         <tr><td colspan="3" class="text-end">Subtotal</td><td>${{ order.subtotal }}</td></tr>
                         <tr><td colspan="3" class="text-end">Shipping</td><td>${{ order.shipping_cost }}</td></tr>
+                        {% if order.discount_amount > 0 %}
+                        <tr class="text-success"><td colspan="3" class="text-end">Discount</td><td>-${{ order.discount_amount }}</td></tr>
+                        {% endif %}
                         <tr class="fw-bold"><td colspan="3" class="text-end">Total</td><td>${{ order.total }}</td></tr>
                     </tfoot>
                 </table>
