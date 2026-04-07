@@ -45,7 +45,11 @@ INSTALLED_APPS = [
     "orders.apps.OrdersConfig",
     "cart.apps.CartConfig",
     "bookmarks.apps.BookmarksConfig",
+<<<<<<< Updated upstream
     "recommendations.apps.RecommendationsConfig",
+=======
+    "reports.apps.ReportsConfig",
+>>>>>>> Stashed changes
 ]
 
 MIDDLEWARE = [

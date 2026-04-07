@@ -49,6 +49,27 @@
                         {{ order.get_status_display }}
                     </span>
                 </p>
+                <p class="mb-0">
+    <strong>Status:</strong>
+    <span class="badge bg-{% if order.status == 'DELIVERED' %}success{% elif order.status == 'CANCELLED' %}danger{% else %}info{% endif %}">
+        {{ order.get_status_display }}
+    </span>
+</p>
+
+{% if order.status == "DELIVERED" and not order.return_request %}
+    <div class="mt-3">
+        <a href="{% url 'orders:request_return' order.id %}" class="btn btn-outline-danger btn-sm">
+            Request Return
+        </a>
+    </div>
+{% elif order.return_request %}
+    <div class="mt-3">
+        <p class="mb-0">
+            <strong>Return Request:</strong>
+            <span class="badge bg-warning text-dark">{{ order.return_request.get_status_display }}</span>
+        </p>
+    </div>
+{% endif %}
             </div>
         </div>
         <div class="card shadow-sm">

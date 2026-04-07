@@ -37,7 +37,9 @@
             {% endif %}
         </div>
         <p class="text-muted small">Sold by {{ product.merchant.store_name|default:product.merchant.full_name }}</p>
-
+        <a href="{% url 'reports:report_merchant' product.slug %}" class="btn btn-outline-danger btn-sm">
+        Report Merchant
+        </a>
         {% if product.average_rating %}
         <p class="mb-2">
             {% for i in "12345" %}

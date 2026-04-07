@@ -16,6 +16,7 @@ urlpatterns = [
     path("cart/", include("cart.urls")),
     path("bookmarks/", include("bookmarks.urls")),
     path("", RedirectView.as_view(pattern_name="products:home", permanent=False)),
+    path("reports/", include("reports.urls")),
 ]
 
 if settings.DEBUG:
