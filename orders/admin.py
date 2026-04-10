@@ -20,7 +20,7 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(ReturnRequest)
 class ReturnRequestAdmin(admin.ModelAdmin):
-    list_display = ("order", "user", "status", "created_at")
+    list_display = ("order_item", "user", "quantity", "status", "created_at")
     list_filter = ("status", "created_at")
-    search_fields = ("order__order_number", "user__email")
+    search_fields = ("order_item__product_name", "user__email", "order_item__order__order_number")
     readonly_fields = ("created_at", "updated_at")

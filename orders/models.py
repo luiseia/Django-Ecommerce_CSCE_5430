@@ -60,38 +60,47 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.quantity}× {self.product_name}"
-
     @property
     def line_total(self):
+        if self.product_price is None:
+            return 0
         return self.product_price * self.quantity
 class ReturnRequest(models.Model):
     class Status(models.TextChoices):
-        PENDING = "PENDING", "Pending"
+        REQUESTED = "REQUESTED", "Requested"
         APPROVED = "APPROVED", "Approved"
         REJECTED = "REJECTED", "Rejected"
         REFUNDED = "REFUNDED", "Refunded"
 
-    order = models.OneToOneField(
-        Order,
+    order_item = models.OneToOneField(
+        OrderItem,
         on_delete=models.CASCADE,
         related_name="return_request",
+        null=True,
+        blank=True,
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="return_requests",
     )
+    quantity = models.PositiveIntegerField(default=1)
     reason = models.TextField()
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
-        default=Status.PENDING,
+        default=Status.REQUESTED,
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ["-created_at"]
-
     def __str__(self):
-        return f"Return request for order {self.order.order_number}"
+        if self.order_item is not None:
+            return f"Return request for {self.order_item.product_name}"
+        return f"Return request #{self.pk}"
+
+    @property
+    def order(self):
+        return self.order_item.order

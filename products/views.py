@@ -184,6 +184,43 @@ def submit_review(request, slug):
         messages.error(request, "Please correct the errors below.")
 
     return redirect("products:product_detail", slug=slug)
+@login_required
+def edit_review(request, slug):
+    product = get_object_or_404(Product, slug=slug, is_active=True)
+
+    has_purchased = OrderItem.objects.filter(
+        order__user=request.user,
+        product=product,
+        order__status=Order.Status.DELIVERED,
+    ).exists()
+
+    if not has_purchased:
+        messages.error(request, "Only customers who purchased and received this product can review it.")
+        return redirect("products:product_detail", slug=slug)
+
+    review = Review.objects.filter(product=product, user=request.user).first()
+
+    if request.method == "POST":
+        form = ReviewForm(request.POST, instance=review)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.product = product
+            obj.user = request.user
+            obj.save()
+            messages.success(request, "Your review has been saved.")
+            return redirect("orders:order_history")
+    else:
+        form = ReviewForm(instance=review)
+
+    return render(
+        request,
+        "products/edit_review.html",
+        {
+            "product": product,
+            "form": form,
+            "review": review,
+        },
+    )
 '''def submit_review(request, slug):
     """Handle review form submission (POST only)."""
     product = get_object_or_404(Product, slug=slug, is_active=True)

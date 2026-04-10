@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}
+    {% if review %}Edit Review{% else %}Write Review{% endif %} — ShopProject
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 700px;">
+    <h2 class="mb-3">
+        {% if review %}View / Edit Review{% else %}Write Review{% endif %}
+    </h2>
+
+    <p class="text-muted mb-4">
+        Product: {{ product.name }}
+    </p>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+
+                <div class="mb-3">
+                    <label class="form-label d-block">Rating</label>
+                    {% for radio in form.rating %}
+                        <div class="form-check form-check-inline">
+                            {{ radio.tag }}
+                            <label class="form-check-label" for="{{ radio.id_for_label }}">
+                                {{ radio.choice_label }}
+                            </label>
+                        </div>
+                    {% endfor %}
+                    {% if form.rating.errors %}
+                        <div class="text-danger small">{{ form.rating.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="{{ form.comment.id_for_label }}">Comment</label>
+                    {{ form.comment }}
+                    {% if form.comment.errors %}
+                        <div class="text-danger small">{{ form.comment.errors.0 }}</div>
+                    {% endif %}
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    {% if review %}Update Review{% else %}Submit Review{% endif %}
+                </button>
+                <a href="{% url 'orders:order_history' %}" class="btn btn-outline-secondary">Back to Orders</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

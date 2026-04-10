@@ -1,20 +1,36 @@
 {% extends "base.html" %}
 
+{% block title %}Request Return — ShopProject{% endblock %}
+
 {% block content %}
 <div class="container py-4" style="max-width: 700px;">
   <h2>Request Return</h2>
   <p class="text-muted">
-    Order: {{ order.order_number }}
+    Order: {{ order.order_number }}<br>
+    Item: {{ order_item.product_name }}
   </p>
 
   <div class="card">
     <div class="card-body">
+      <p><strong>Purchased Quantity:</strong> {{ order_item.quantity }}</p>
+
       <form method="post">
         {% csrf_token %}
 
         <div class="mb-3">
+          <label class="form-label">Quantity</label>
+          {{ form.quantity }}
+          {% if form.quantity.errors %}
+            <div class="text-danger small">{{ form.quantity.errors.0 }}</div>
+          {% endif %}
+        </div>
+
+        <div class="mb-3">
           <label class="form-label">Reason</label>
           {{ form.reason }}
+          {% if form.reason.errors %}
+            <div class="text-danger small">{{ form.reason.errors.0 }}</div>
+          {% endif %}
         </div>
 
         <button type="submit" class="btn btn-danger">Submit Return Request</button>
