@@ -1,6 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Avg, Count, IntegerField, OuterRef, Q, Subquery, Sum
+from django.db.models.functions import Coalesce
 from django.shortcuts import get_object_or_404, redirect, render
 
 from accounts.decorators import merchant_required
@@ -138,6 +139,8 @@ def product_detail(request, slug):
             user=request.user, product=product
         ).exists()
 
+    share_url = request.build_absolute_uri(product.get_absolute_url())
+
     context = {
         "product": product,
         "reviews": reviews,
@@ -147,6 +150,7 @@ def product_detail(request, slug):
         "user_review": user_review,
         "review_message": review_message,
         "is_bookmarked": is_bookmarked,
+        "share_url": share_url,
     }
     return render(request, "products/product_detail.html", context)
 
@@ -242,6 +246,59 @@ def edit_review(request, slug):
             messages.error(request, "Please correct the errors below.")
 
     return redirect("products:product_detail", slug=slug)'''
+
+
+def best_sellers(request):
+    """Top products ranked by confirmed sales volume and rating.
+
+    Sales volume is summed via a Subquery to avoid the join-multiplication
+    bug that appears when Sum and Avg are annotated across two different
+    relations in the same query.
+    """
+    excluded_statuses = [
+        Order.Status.PENDING,
+        Order.Status.CANCELLED,
+        Order.Status.REFUNDED,
+    ]
+
+    sold_subquery = (
+        OrderItem.objects
+        .filter(product=OuterRef("pk"))
+        .exclude(order__status__in=excluded_statuses)
+        .values("product")
+        .annotate(total=Sum("quantity"))
+        .values("total")
+    )
+
+    top_sellers = (
+        Product.objects.filter(is_active=True)
+        .select_related("inventory", "category", "merchant")
+        .annotate(
+            total_sold=Coalesce(
+                Subquery(sold_subquery, output_field=IntegerField()),
+                0,
+            ),
+            avg_rating_anno=Coalesce(Avg("reviews__rating"), 0.0),
+            review_count_anno=Count("reviews"),
+        )
+        .filter(total_sold__gt=0)
+        .order_by("-total_sold", "-avg_rating_anno", "-review_count_anno")[:20]
+    )
+
+    bookmarked_ids = set()
+    if request.user.is_authenticated:
+        bookmarked_ids = set(
+            Bookmark.objects.filter(user=request.user).values_list("product_id", flat=True)
+        )
+
+    return render(
+        request,
+        "products/best_sellers.html",
+        {
+            "top_sellers": top_sellers,
+            "bookmarked_ids": bookmarked_ids,
+        },
+    )
 
 
 def category_detail(request, slug):

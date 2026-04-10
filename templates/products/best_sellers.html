@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block title %}Best Sellers — ShopProject{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center mb-4">
+    <div>
+        <h2 class="mb-1"><i class="bi bi-trophy-fill text-warning"></i> Best Sellers</h2>
+        <p class="text-muted mb-0">Top products ranked by sales and customer ratings.</p>
+    </div>
+</div>
+
+{% if top_sellers %}
+<div class="row g-3">
+    {% for product in top_sellers %}
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="row g-0 align-items-center">
+                <div class="col-auto ps-3">
+                    {% if forloop.counter == 1 %}
+                    <span class="badge rounded-pill bg-warning text-dark fs-5 px-3 py-2">#1</span>
+                    {% elif forloop.counter == 2 %}
+                    <span class="badge rounded-pill bg-secondary fs-5 px-3 py-2">#2</span>
+                    {% elif forloop.counter == 3 %}
+                    <span class="badge rounded-pill text-bg-warning fs-5 px-3 py-2" style="background-color:#cd7f32 !important;color:#fff !important;">#3</span>
+                    {% else %}
+                    <span class="badge rounded-pill bg-light text-dark fs-6 px-3 py-2">#{{ forloop.counter }}</span>
+                    {% endif %}
+                </div>
+
+                <div class="col-md-2 col-3 p-2">
+                    {% if product.image %}
+                    <img src="{{ product.image.url }}" class="img-fluid rounded" alt="{{ product.name }}" style="height:120px;object-fit:cover;width:100%;">
+                    {% else %}
+                    <div class="bg-light d-flex align-items-center justify-content-center rounded" style="height:120px;">
+                        <i class="bi bi-image text-muted" style="font-size:2rem;"></i>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="col-md col-7">
+                    <div class="card-body py-2">
+                        <h5 class="mb-1">
+                            <a href="{{ product.get_absolute_url }}" class="text-decoration-none text-body">
+                                {{ product.name }}
+                            </a>
+                        </h5>
+                        {% if product.category %}
+                        <p class="mb-1"><small class="text-muted">{{ product.category.name }}</small></p>
+                        {% endif %}
+                        <div class="mb-1">
+                            {% if product.avg_rating_anno %}
+                                {% for i in "12345" %}
+                                    {% if forloop.counter <= product.avg_rating_anno %}
+                                    <i class="bi bi-star-fill text-warning"></i>
+                                    {% else %}
+                                    <i class="bi bi-star text-warning"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <small class="text-muted ms-1">
+                                    {{ product.avg_rating_anno|floatformat:1 }}/5
+                                    ({{ product.review_count_anno }} review{{ product.review_count_anno|pluralize }})
+                                </small>
+                            {% else %}
+                                <small class="text-muted">No ratings yet</small>
+                            {% endif %}
+                        </div>
+                        <span class="badge bg-success-subtle text-success-emphasis">
+                            <i class="bi bi-bag-check-fill"></i> {{ product.total_sold }} sold
+                        </span>
+                    </div>
+                </div>
+
+                <div class="col-md-3 col-12 text-md-end text-center p-3">
+                    <div class="mb-2">
+                        {% if product.discount_price %}
+                        <div class="text-decoration-line-through text-muted small">${{ product.price }}</div>
+                        <div class="fw-bold fs-4 text-danger">${{ product.discount_price }}</div>
+                        {% else %}
+                        <div class="fw-bold fs-4">${{ product.price }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2 justify-content-md-end justify-content-center">
+                        <a href="{{ product.get_absolute_url }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-eye"></i> View
+                        </a>
+                        {% if user.is_authenticated %}
+                        <a href="{% url 'bookmarks:toggle_bookmark' product.pk %}?next={{ request.path }}"
+                           class="btn btn-outline-{% if product.pk in bookmarked_ids %}danger{% else %}secondary{% endif %} btn-sm"
+                           title="{% if product.pk in bookmarked_ids %}Remove Bookmark{% else %}Add Bookmark{% endif %}">
+                            <i class="bi bi-bookmark{% if product.pk in bookmarked_ids %}-fill{% endif %}"></i>
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-light text-center py-5">
+    <i class="bi bi-bar-chart text-muted" style="font-size:3rem;"></i>
+    <p class="text-muted mt-3 mb-0">No sales recorded yet. Check back soon!</p>
+</div>
+{% endif %}
+{% endblock %}
