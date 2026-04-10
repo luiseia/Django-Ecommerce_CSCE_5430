@@ -1,32 +1,66 @@
-# ShopProject — Django E-commerce
+# CLAUDE.md
 
-## 项目结构
-- config/          → 项目设置、根 URL、WSGI/ASGI
-- accounts/        → 自定义 User 模型、认证、个人资料
-- products/        → 商品和分类模型
-- orders/          → 订单和订单项模型
-- cart/            → 购物车模型
-- templates/       → 所有 HTML 模板 (Bootstrap 5)
-- static/          → CSS、JS、图片
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 技术栈
-- Django 5.2 LTS
-- 自定义 User 模型，email 登录
-- 三个角色：Shopper, Merchant, Administrator
-- Bootstrap 5 响应式模板
+## Commands
 
-## 命令
-- `python manage.py runserver` — 启动开发服务器
-- `python manage.py makemigrations` — 生成迁移
-- `python manage.py migrate` — 执行迁移
-- `python manage.py seed_products` — 填充测试数据
+```bash
+python manage.py runserver                      # start dev server
+python manage.py makemigrations <app>           # generate migrations (per app — no global makemigrations in README)
+python manage.py migrate
+python manage.py createsuperuser                # creates an ADMINISTRATOR role user
+python manage.py seed_products                  # populate demo categories/products
+python manage.py test                           # run all tests
+python manage.py test orders.test_return_review_report   # run one test module
+python manage.py test products.tests_validation.ProductValidationTests.test_name_required  # single test
+```
 
-## 当前需要实现的功能
+Note: test modules do NOT all follow the default `tests.py` convention. `orders/test_return_review_report.py` and `products/tests_validation.py` use custom names and must be targeted explicitly (or discovered via `python manage.py test <app>`).
 
-### 1. Personal Page（个人页面）
-用户可以查看和编辑自己的个人信息（姓名、邮箱、电话、头像等）。
-每个用户都有一个专属的个人页面展示他们的信息。
+Dependencies: `Django>=5.2,<5.3`, `django-crispy-forms`, `crispy-bootstrap5`, `Pillow`. SQLite is the default DB (`db.sqlite3`).
 
-### 2. Bookmarks（收藏夹）
-用户可以将商品添加到收藏夹，方便以后查看。
-需要创建 Bookmark 模型、添加/删除收藏的视图和模板。
+## Architecture
+
+### Apps and responsibilities
+| App | Purpose |
+|---|---|
+| `config/` | settings, root URL conf (all apps are mounted here), WSGI/ASGI |
+| `accounts/` | custom `User`, email auth, face login, profiles, merchant dashboard |
+| `products/` | `Product`, `Category`, `Inventory` (separate OneToOne model), `Review` |
+| `orders/` | `Order`, `OrderItem` (price snapshots), `ReturnRequest` |
+| `cart/` | `Cart`, `CartItem` (DB-backed, one cart per user) |
+| `bookmarks/` | `Bookmark` (user ↔ product favorites) |
+| `recommendations/` | view-tracking + scoring service with popular-product fallback |
+| `reports/` | `MerchantReport` (user-submitted complaints against merchants) |
+
+### Custom auth — critical to understand
+- `AUTH_USER_MODEL = "accounts.User"` with `USERNAME_FIELD = "email"`.
+- Authentication goes through `accounts.backends.EmailBackend` (not Django's default).
+- Roles live on a single `role` CharField on `User` with three `TextChoices`: `SHOPPER`, `MERCHANT`, `ADMIN`. Helper properties `is_shopper` / `is_merchant` / `is_administrator`.
+- Proxy models `Shopper`, `Merchant`, `Administrator` exist mainly for role-scoped admin views; their `save()` forces the role, so saving through a proxy rewrites `role`.
+- Role gating uses `accounts.decorators` — `@shopper_required`, `@merchant_required`, `@administrator_required`. These raise `PermissionDenied`, they do NOT redirect; stack `@login_required` above them.
+- Template filter `{% if user|has_role:'MERCHANT' %}` (from `accounts.templatetags.account_tags`).
+- Two login modes at `/accounts/login/`: password+captcha, and face login (email + face descriptor stored on `accounts.FaceCredential`). Face login requires pre-enrollment at `/accounts/face-enroll/` and face-api.js model files under `static/faceapi/models/`. Threshold controlled by `FACE_LOGIN_DISTANCE_THRESHOLD` (default 0.60).
+
+### Product / order data model notes
+- `Product.merchant` is limited to users with `role="MERCHANT"` (`limit_choices_to`).
+- Stock lives on a separate `Inventory` OneToOne model, not on `Product`. Use `inventory.decrease()` / `increase()` rather than mutating `quantity` directly — they update `last_restocked` and handle the "not enough stock" ValueError. `Product.in_stock` / `stock_quantity` read through this relation and tolerate a missing `Inventory`.
+- `OrderItem` stores `product_name` and `product_price` as snapshots so historical orders survive price changes and product deletion (`product` is `SET_NULL`).
+- `Order.calculate_totals()` recomputes `subtotal` + `total` from items; call it after adding/removing items.
+- `ReturnRequest` is OneToOne per `OrderItem` and has its own status machine (`REQUESTED → APPROVED/REJECTED → REFUNDED`), independent from `Order.Status`.
+- Reviews are unique per `(product, user)` via a DB constraint; `Product.average_rating` and `review_count` aggregate lazily.
+
+### Recommendations
+- Gated by `ENABLE_AI_RECOMMENDATIONS` setting (env var, default on). When off, every entry point returns `get_popular_recommendations` as fallback.
+- `recommendations.service` is the public API — `track_product_view`, `get_home_recommendations`, `get_product_recommendations`, `get_cart_recommendations`. Views should import from `service`, not `algorithms` or `fallback` directly.
+- All service functions wrap scoring in try/except and log+fallback to popular on any exception, so scoring bugs never break page rendering.
+- View events are recorded in `ProductViewEvent` (recommendation-only table) via `track_product_view`; only fires for authenticated users.
+
+### URL layout
+Root URLs in `config/urls.py` mount apps at: `/accounts/`, `/products/`, `/orders/`, `/cart/`, `/bookmarks/`, `/reports/`, `/api/recommend/`, `/admin/`. `/` redirects to `products:home`. Each app uses an `app_name` namespace — always reverse with the `namespace:name` form (e.g. `accounts:login`, `products:product_detail`).
+
+### Templates & static
+- All templates live in the top-level `templates/` dir (added to `TEMPLATES["DIRS"]`), not per-app `templates/<app>/`.
+- Bootstrap 5 via crispy-forms (`CRISPY_TEMPLATE_PACK = "bootstrap5"`).
+- `cart.context_processors.cart_item_count` injects the cart badge count into every template.
+- Media uploads (avatars, product images) go to `MEDIA_ROOT = BASE_DIR/media`; served in DEBUG only.
